@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Java / Eclipse
+*.class
+bin/
+target/
+.classpath
+.project
+.settings/
+
+# ML models (optional - can be large)
+python-ml/models/*.pkl
+python-ml/models/*.joblib
+
+# Credentials / secrets
+*.env
+config.properties
+db_config.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+Add gitignore file
