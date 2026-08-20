@@ -1,37 +1,32 @@
 public class Prediction {
 
     private MachineData machineData;
-    private int predictionResult;
+    private String result;
 
-    public Prediction(
-            MachineData machineData,
-            int predictionResult) {
-
+    public Prediction(MachineData machineData, String result) {
         this.machineData = machineData;
-        this.predictionResult = predictionResult;
+        this.result = result;
     }
 
     public MachineData getMachineData() {
         return machineData;
     }
 
-    public int getPredictionResult() {
-        return predictionResult;
-    }
-
-    public String getPredictionLabel() {
-
-        if (predictionResult == 1) {
-            return "Failure";
-        }
-
-        return "No Failure";
+    public String getResult() {
+        return result;
     }
 
     public void displayPrediction() {
 
-        System.out.println(
-                "Prediction: " + getPredictionLabel()
-        );
+        System.out.println();
+        System.out.println("----- Prediction Result -----");
+
+        System.out.println("Machine ID: "
+                + machineData.getMachineId());
+
+        System.out.println("Prediction: "
+                + result);
+
+        System.out.println("-----------------------------");
     }
 }
