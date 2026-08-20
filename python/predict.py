@@ -1,39 +1,30 @@
-import os
-import pandas as pd
+import sys
 import joblib
+import pandas as pd
 
 
-# Get project folder path
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# --------------------------------------------------
+# 1. Load the trained Random Forest model
+# --------------------------------------------------
 
-# Trained model path
-MODEL_PATH = os.path.join(
-    BASE_DIR,
-    "model",
-    "random_forest_model.joblib"
-)
+model = joblib.load("python/random_forest_model.pkl")
 
 
-# 1. Load trained model
-if not os.path.exists(MODEL_PATH):
-    print("Trained model not found.")
-    print("Please run train_model.py first.")
-    exit()
+# --------------------------------------------------
+# 2. Read machine parameters from Java
+# --------------------------------------------------
 
-model = joblib.load(MODEL_PATH)
-
-print("Random Forest model loaded successfully.")
-
-
-# 2. Sample machine data
-air_temperature = 300.0
-process_temperature = 310.0
-rotational_speed = 1500
-torque = 40.0
-tool_wear = 100
+air_temperature = float(sys.argv[1])
+process_temperature = float(sys.argv[2])
+rotational_speed = float(sys.argv[3])
+torque = float(sys.argv[4])
+tool_wear = float(sys.argv[5])
 
 
-# 3. Create DataFrame
+# --------------------------------------------------
+# 3. Create DataFrame with the same feature names
+# --------------------------------------------------
+
 machine_data = pd.DataFrame([
     {
         "Air temperature [K]": air_temperature,
@@ -45,17 +36,16 @@ machine_data = pd.DataFrame([
 ])
 
 
+# --------------------------------------------------
 # 4. Make prediction
+# --------------------------------------------------
+
 prediction = model.predict(machine_data)[0]
 
 
-# 5. Display machine data
-print("\nMachine Parameters:")
-print(machine_data)
-
-
-# 6. Display prediction
-print("\nPrediction:")
+# --------------------------------------------------
+# 5. Display prediction
+# --------------------------------------------------
 
 if prediction == 1:
     print("Predicted Failure")
