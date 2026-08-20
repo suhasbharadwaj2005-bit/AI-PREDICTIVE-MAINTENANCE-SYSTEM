@@ -1,120 +1,256 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
+
 
 public class Main {
 
     public static void main(String[] args) {
 
-        Connection connection =
-                DBConnection.getConnection();
-
-        if (connection == null) {
-
-            System.out.println(
-                    "Application stopped because "
-                    + "database connection failed."
-            );
-
-            return;
-        }
-
-        String query =
-                "SELECT machine_id, "
-                + "air_temperature, "
-                + "process_temperature, "
-                + "rotational_speed, "
-                + "torque, "
-                + "tool_wear "
-                + "FROM machine_sensor_data "
-                + "ORDER BY reading_id";
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
 
         try {
 
-            PreparedStatement statement =
-                    connection.prepareStatement(query);
+            // --------------------------------------------------
+            // 1. Connect to Oracle Database
+            // --------------------------------------------------
 
-            ResultSet resultSet =
-                    statement.executeQuery();
+            connection = DBConnection.getConnection();
 
-            System.out.println(
-                    "\n--- Machine Sensor Data ---"
-            );
+            System.out.println("Oracle database connected successfully.");
 
-            while (resultSet.next()) {
 
-                MachineData machineData =
-                        new MachineData(
-                                resultSet.getInt("machine_id"),
-                                resultSet.getDouble(
-                                        "air_temperature"
-                                ),
-                                resultSet.getDouble(
-                                        "process_temperature"
-                                ),
-                                resultSet.getDouble(
-                                        "rotational_speed"
-                                ),
-                                resultSet.getDouble(
-                                        "torque"
-                                ),
-                                resultSet.getDouble(
-                                        "tool_wear"
-                                )
-                        );
+            // --------------------------------------------------
+            // 2. Retrieve machine data
+            // --------------------------------------------------
 
-                machineData.displayData();
+            String sql =
+                    "SELECT machine_id, " +
+                    "air_temperature, " +
+                    "process_temperature, " +
+                    "rotational_speed, " +
+                    "torque, " +
+                    "tool_wear " +
+                    "FROM sensor_data " +
+                    "WHERE machine_id = ?";
+
+
+            statement = connection.prepareStatement(sql);
+
+            statement.setInt(1, 1);
+
+            resultSet = statement.executeQuery();
+
+
+            if (resultSet.next()) {
+
+                int machineId =
+                        resultSet.getInt("machine_id");
+
+                double airTemperature =
+                        resultSet.getDouble("air_temperature");
+
+                double processTemperature =
+                        resultSet.getDouble("process_temperature");
+
+                double rotationalSpeed =
+                        resultSet.getDouble("rotational_speed");
+
+                double torque =
+                        resultSet.getDouble("torque");
+
+                double toolWear =
+                        resultSet.getDouble("tool_wear");
+
+
+                // --------------------------------------------------
+                // 3. Create MachineData object
+                // --------------------------------------------------
+
+                MachineData machine = new MachineData(
+                        machineId,
+                        airTemperature,
+                        processTemperature,
+                        rotationalSpeed,
+                        torque,
+                        toolWear
+                );
+
+
+                // --------------------------------------------------
+                // 4. Display machine data
+                // --------------------------------------------------
+
+                System.out.println();
+                System.out.println("----- Machine Data -----");
 
                 System.out.println(
-                        "---------------------------"
+                        "Machine ID: " + machine.getMachineId());
+
+                System.out.println(
+                        "Air Temperature: "
+                                + machine.getAirTemperature());
+
+                System.out.println(
+                        "Process Temperature: "
+                                + machine.getProcessTemperature());
+
+                System.out.println(
+                        "Rotational Speed: "
+                                + machine.getRotationalSpeed());
+
+                System.out.println(
+                        "Torque: "
+                                + machine.getTorque());
+
+                System.out.println(
+                        "Tool Wear: "
+                                + machine.getToolWear());
+
+                System.out.println("------------------------");
+
+
+                // --------------------------------------------------
+                // 5. Call Python ML model
+                // --------------------------------------------------
+
+                String predictionResult =
+                        runPythonPrediction(machine);
+
+
+                // --------------------------------------------------
+                // 6. Create Prediction object
+                // --------------------------------------------------
+
+                Prediction prediction =
+                        new Prediction(
+                                machine,
+                                predictionResult
+                        );
+
+
+                // --------------------------------------------------
+                // 7. Display prediction
+                // --------------------------------------------------
+
+                prediction.displayPrediction();
+
+            } else {
+
+                System.out.println(
+                        "No machine data found."
                 );
             }
 
-            resultSet.close();
-            statement.close();
 
-            System.out.println(
-                    "\nJava successfully retrieved "
-                    + "machine data using JDBC."
-            );
-
-            System.out.println(
-                    "Python Random Forest prediction "
-                    + "is handled separately."
-            );
-
-            System.out.println(
-                    "Direct Java-Python integration "
-                    + "can be added in a future version."
-            );
-
-        } catch (SQLException e) {
-
-            System.out.println(
-                    "Error while retrieving data."
-            );
+        } catch (Exception e) {
 
             System.out.println(
                     "Error: " + e.getMessage()
             );
 
+            e.printStackTrace();
+
         } finally {
 
             try {
 
-                connection.close();
+                if (resultSet != null) {
+                    resultSet.close();
+                }
+
+                if (statement != null) {
+                    statement.close();
+                }
+
+                if (connection != null) {
+                    connection.close();
+                }
+
+            } catch (Exception e) {
 
                 System.out.println(
-                        "Database connection closed."
-                );
-
-            } catch (SQLException e) {
-
-                System.out.println(
-                        "Error while closing connection."
+                        "Error while closing resources: "
+                                + e.getMessage()
                 );
             }
         }
+    }
+
+
+    // --------------------------------------------------
+    // Java → Python integration
+    // --------------------------------------------------
+
+    private static String runPythonPrediction(
+            MachineData machine) throws Exception {
+
+
+        ProcessBuilder processBuilder =
+                new ProcessBuilder(
+                        "python",
+                        "python/predict.py",
+
+                        String.valueOf(
+                                machine.getAirTemperature()),
+
+                        String.valueOf(
+                                machine.getProcessTemperature()),
+
+                        String.valueOf(
+                                machine.getRotationalSpeed()),
+
+                        String.valueOf(
+                                machine.getTorque()),
+
+                        String.valueOf(
+                                machine.getToolWear())
+                );
+
+
+        processBuilder.redirectErrorStream(true);
+
+
+        Process process =
+                processBuilder.start();
+
+
+        BufferedReader reader =
+                new BufferedReader(
+                        new InputStreamReader(
+                                process.getInputStream()
+                        )
+                );
+
+
+        StringBuilder output =
+                new StringBuilder();
+
+        String line;
+
+
+        while ((line = reader.readLine()) != null) {
+
+            output.append(line);
+        }
+
+
+        int exitCode =
+                process.waitFor();
+
+
+        if (exitCode != 0) {
+
+            throw new RuntimeException(
+                    "Python prediction process failed."
+            );
+        }
+
+
+        return output.toString();
     }
 }
