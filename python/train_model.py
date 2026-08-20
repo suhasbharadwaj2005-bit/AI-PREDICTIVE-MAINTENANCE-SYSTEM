@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import joblib
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -106,3 +107,5 @@ joblib.dump(model, MODEL_PATH)
 
 print("\nTrained model saved successfully.")
 print("Model location:", MODEL_PATH)
+
+joblib.dump(model, "python/random_forest_model.pkl")
